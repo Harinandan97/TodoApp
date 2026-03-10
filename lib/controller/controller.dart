@@ -3,10 +3,13 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo_app_test/view/Authentication/LoginScreen.dart';
 
 import '../view/bottomNavigationBar/bottomnavigationBar.dart';
+
+
 
 class ToDoController extends GetxController {
 
@@ -19,6 +22,8 @@ class ToDoController extends GetxController {
   RxInt currentIndex = 0.obs;
 
 
+
+
   String? userMail;
   @override
   void onInit() {
@@ -26,7 +31,6 @@ class ToDoController extends GetxController {
     startSplash();
     _user.bindStream(_auth.authStateChanges());
 
-    loadLogin();
   }
 
   final TextEditingController emailController = TextEditingController();
@@ -40,7 +44,12 @@ class ToDoController extends GetxController {
 
   void startSplash() {
     Timer(const Duration(seconds: 3), () {
-      Get.off(() => Loginscreen());
+
+      if (_auth.currentUser != null) {
+        Get.off(() => MainScreen());
+      } else {
+        Get.off(() => Loginscreen());
+      }
     });
   }
 
@@ -61,7 +70,7 @@ class ToDoController extends GetxController {
       emailController.clear();
       passwordController.clear();
 
-      await _saveLogin(email);
+
 
     } on FirebaseAuthException catch (e) {
       Get.snackbar("Error", e.message ?? "Registration Failed");
@@ -82,8 +91,8 @@ class ToDoController extends GetxController {
       );
 
       _user.value = userCredential.user;
+      Get.off(() => MainScreen());
 
-      await _saveLogin(email);
 
     } on FirebaseAuthException catch (e) {
       Get.snackbar("Error", e.message ?? "Login Failed");
@@ -95,41 +104,34 @@ class ToDoController extends GetxController {
 
     await _auth.signOut();
 
-    await _clearLogin();
-
     _user.value = null;
     emailController.clear();
     passwordController.clear();
+    currentIndex.value = 0;
+
+    Get.off(() => Loginscreen());
+  }
+///Google signIn
+  Future<UserCredential?> signInWithGoogle() async {
+
+    final GoogleSignInAccount? googleUser =
+    await GoogleSignIn().signIn();
+
+    if (googleUser == null) return null;
+
+    final GoogleSignInAuthentication googleAuth =
+    await googleUser.authentication;
+
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+    Get.off(() => MainScreen());
+    return await FirebaseAuth.instance.signInWithCredential(credential);
+
   }
 
-  // SAVE LOGIN
-  Future<void> _saveLogin(String email) async {
 
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('email', email);
-  }
-
-  // CLEAR LOGIN
-  Future<void> _clearLogin() async {
-
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.clear();
-  }
-
-  // LOAD LOGIN
-  Future<void> loadLogin() async {
-
-    final prefs = await SharedPreferences.getInstance();
-
-    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-    if (isLoggedIn) {
-      userMail = prefs.getString('email');
-    }
-  }
 
   @override
   void onClose() {

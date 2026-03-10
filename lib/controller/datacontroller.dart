@@ -1,27 +1,23 @@
-import 'package:dio/dio.dart';
+
+
+
+
 import 'package:flutter/cupertino.dart';
-import 'package:get/get.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+
+import '../service/service.dart';
 
 class TaskController extends GetxController {
-
-  final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: "https://rootcause-iq-default-rtdb.firebaseio.com/",
-    ),
-  );
-
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TaskService _service = TaskService();
 
   var tasks = <Map<String, dynamic>>[].obs;
-
-  String get userId => _auth.currentUser!.uid;
-
-  bool currentState = false;
 
   final TextEditingController titleController = TextEditingController();
   final TextEditingController taskIdController = TextEditingController();
   final TextEditingController taskId2Controller = TextEditingController();
+
+  bool currentState = false;
 
   @override
   void onInit() {
@@ -30,91 +26,30 @@ class TaskController extends GetxController {
   }
 
   // FETCH TASKS
-  Future<void> fetchTasks() async {
-    try {
-
-      final response = await dio.get("tasks/$userId.json");
-
-      if (response.data == null) {
-        tasks.clear();
-        return;
-      }
-
-      Map data = response.data;
-
-      List<Map<String, dynamic>> loadedTasks = [];
-
-      data.forEach((key, value) {
-        loadedTasks.add({
-          "id": key,
-          "title": value["title"],
-          "completed": value["completed"]
-        });
-      });
-
-      tasks.value = loadedTasks;
-
-    } catch (e) {
-      print(e);
-    }
+  void fetchTasks() async {
+    tasks.value = await _service.fetchTasks();
   }
 
   // ADD TASK
-  Future<void> addTask() async {
-
-    try {
-
-      await dio.post(
-        "tasks/$userId.json",
-        data: {
-          "title": titleController.text,
-          "completed": false,
-        },
-      );
-
-      titleController.clear();
-
-      fetchTasks();
-
-    } catch (e) {
-      print(e);
-    }
+  void addTask() async {
+    if (titleController.text.isEmpty) return;
+    await _service.addTask(titleController.text);
+    titleController.clear();
+    fetchTasks();
   }
 
   // DELETE TASK
-  Future<void> deleteTask() async {
-
-    try {
-
-      await dio.delete(
-        "tasks/$userId/${taskIdController.text}.json",
-      );
-
-      taskIdController.clear();
-
-      fetchTasks();
-
-    } catch (e) {
-      print(e);
-    }
+  void deleteTask() async {
+    if (taskIdController.text.isEmpty) return;
+    await _service.deleteTask(taskIdController.text);
+    taskIdController.clear();
+    fetchTasks();
   }
 
   // TOGGLE TASK
-  Future<void> toggleTask() async {
-
-    try {
-
-      await dio.patch(
-        "tasks/$userId/${taskId2Controller.text}.json",
-        data: {
-          "completed": !currentState
-        },
-      );
-
-      fetchTasks();
-
-    } catch (e) {
-      print(e);
-    }
+  void toggleTask() async {
+    if (taskId2Controller.text.isEmpty) return;
+    await _service.toggleTask(taskId2Controller.text, currentState);
+    fetchTasks();
   }
 }

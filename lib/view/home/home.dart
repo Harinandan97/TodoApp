@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controller/datacontroller.dart';
-import '../../widget/custom_button.dart';
-import '../../widget/custom_textfield.dart';
-
+import '../../widget/_buildStatCard.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -12,115 +10,167 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final height = MediaQuery
+        .of(context)
+        .size
+        .height;
+    final width = MediaQuery
+        .of(context)
+        .size
+        .width;
+
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+
       appBar: AppBar(
-        title: const Text("Todo App"),
+        title: const Text("My Tasks"),
         centerTitle: true,
+        elevation: 0,
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Obx(() => Align(
-              alignment: Alignment.topLeft,
-              child: Text(
-                "Your Tasks (${controller.tasks.length})",
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )),
-            const SizedBox(height: 10),
-            /// ADD TASK FIELD
-            CustomTextField(
-              Label: "Add Task",
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(width * 0.04),
+          child: Column(
+            children: [
 
-              controller: controller.titleController,
+              /// TASK STATS
+              Obx(() {
+                int completed = controller.tasks
+                    .where((task) => task["completed"] == true)
+                    .length;
 
-            ),
+                return Row(
+                  children: [
 
-            const SizedBox(height: 10),
-
-            /// ADD BUTTON
-            SizedBox(
-              width: double.infinity,
-              child: CustomButton(
-                OnPressed: () {
-                  if (controller.titleController.text.isNotEmpty) {
-                    controller.addTask();
-                  }
-                }, txt: 'Add task',
-
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            /// TASK LIST
-            Expanded(
-              child: Obx(
-                    () => ListView.builder(
-                  itemCount: controller.tasks.length,
-                  itemBuilder: (context, index) {
-
-                    final task = controller.tasks[index];
-
-                    return Container(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.shade200,
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          )
-                        ],
+                    /// TOTAL TASK CARD
+                    Expanded(
+                      child: StatCard(title:
+                      "Total Tasks",
+                        value: controller.tasks.length.toString(),
+                        color:Colors.blue,
                       ),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
+                    ),
 
-                        leading: Checkbox(
-                          value: task["completed"],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          onChanged: (value) {
-                            controller.taskId2Controller.text = task["id"];
-                            controller.currentState = task["completed"];
-                            controller.toggleTask();
-                          },
-                        ),
+                    SizedBox(width: width * 0.03),
 
-                        title: Text(
-                          task["title"],
-                          style: TextStyle(
-                            fontSize: 16,
-                            decoration: task["completed"]
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none,
-                            color: task["completed"] ? Colors.grey : Colors.black,
-                          ),
-                        ),
+                    /// COMPLETED TASK CARD
+                    Expanded(
+                      child: StatCard(
+                        title: "Completed",
+                        value: completed.toString(),
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                );
+              }),
 
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
-                          onPressed: () {
-                            controller.taskIdController.text = task["id"];
-                            controller.deleteTask();
-                          },
+              SizedBox(height: height * 0.03),
+
+              /// ADD TASK FIELD
+              Row(
+                children: [
+
+                  Expanded(
+                    child: TextField(
+                      controller: controller.titleController,
+                      decoration: InputDecoration(
+                        hintText: "Enter new task...",
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(width: width * 0.03),
+
+                  /// ADD BUTTON
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.all(width * 0.04),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      if (controller.titleController.text.isNotEmpty) {
+                        controller.addTask();
+                      }
+                    },
+                    child: const Icon(Icons.add),
+                  )
+                ],
+              ),
+
+              SizedBox(height: height * 0.03),
+
+              /// TASK LIST
+              Expanded(
+                child: Obx(() {
+                  if (controller.tasks.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "No tasks yet 😴\nAdd a task to get started!",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16),
                       ),
                     );
-                  },
-                ),
+                  }
+
+                  return ListView.builder(
+                    itemCount: controller.tasks.length,
+                    itemBuilder: (context, index) {
+                      final task = controller.tasks[index];
+
+                      return Card(
+                        margin: EdgeInsets.only(bottom: height * 0.015),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                        child: ListTile(
+
+                          leading: Checkbox(
+                            value: task["completed"],
+                            onChanged: (value) {
+                              controller.taskId2Controller.text = task["id"];
+                              controller.currentState = task["completed"];
+                              controller.toggleTask();
+                            },
+                          ),
+
+                          title: Text(
+                            task["title"],
+                            style: TextStyle(
+                              decoration: task["completed"]
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              color: task["completed"]
+                                  ? Colors.grey
+                                  : Colors.black,
+                            ),
+                          ),
+
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              controller.taskIdController.text = task["id"];
+                              controller.deleteTask();
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

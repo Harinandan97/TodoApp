@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 
 class CustomButton extends StatelessWidget {
 
-  final String txt;
+  final String? txt;
+  final IconData? icon;
   final Color? clr;
   final void Function()? OnPressed;
 
-  const CustomButton({required this.txt,this.clr,this.OnPressed});
+  const CustomButton({ this.txt,this.clr,this.OnPressed, this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -18,10 +19,28 @@ class CustomButton extends StatelessWidget {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(50)),maximumSize:const Size(double.infinity, 55),elevation: 2 )
           , child:
-          Text(txt!,style: TextStyle(  color: Colors.black, // text color
-            fontSize: 16,
-            fontWeight: FontWeight.w500,),)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+
+            if (icon != null) ...[
+              Icon(icon, color: Colors.white),
+              const SizedBox(width: 8),
+            ],
+
+            Text(
+              txt!,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       )
+
+
     ;
   }
 }
